@@ -23,7 +23,7 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-color);
-  background-image: 
+  background-image:
     radial-gradient(circle at 15% 50%, rgba(255, 20, 147, 0.2), transparent 30%),
     radial-gradient(circle at 85% 30%, rgba(0, 255, 255, 0.2), transparent 30%);
   font-family: 'M PLUS Rounded 1c', 'Fredoka One', sans-serif;
@@ -75,7 +75,7 @@ body {
   font-size: 2.2rem;
   margin: 0 0 15px 0;
   color: #fff;
-  text-shadow: 
+  text-shadow:
     0 0 5px #fff,
     0 0 10px #fff,
     0 0 20px var(--neon-pink),
@@ -85,7 +85,7 @@ body {
 }
 @keyframes pulsate {
   100% {
-    text-shadow: 
+    text-shadow:
       0 0 2px #fff,
       0 0 5px #fff,
       0 0 10px var(--neon-cyan),
@@ -101,7 +101,7 @@ body {
   padding: 25px 20px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 
+  box-shadow:
     0 0 25px rgba(255, 20, 147, 0.4),
     inset 0 0 15px rgba(0, 255, 255, 0.2);
   position: relative;
@@ -129,7 +129,7 @@ body {
   font-size: 1.1rem;
   letter-spacing: 1px;
   cursor: pointer;
-  box-shadow: 
+  box-shadow:
     0 6px 0 #b3005f,
     0 10px 15px rgba(255, 20, 147, 0.4);
   transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* ぷにぷにバウンス */
@@ -142,7 +142,7 @@ body {
 }
 .btn:active {
   transform: translateY(6px) scale(0.95);
-  box-shadow: 
+  box-shadow:
     0 0px 0 #b3005f,
     0 4px 5px rgba(255, 20, 147, 0.4);
 }
@@ -237,7 +237,7 @@ body {
   height: 100px;
   background: radial-gradient(circle at 30% 30%, #555, #111);
   border-radius: 50%;
-  box-shadow: 
+  box-shadow:
     inset 0 2px 5px rgba(255,255,255,0.4),
     0 10px 15px rgba(0,0,0,0.6),
     0 0 0 3px #ff1493,
@@ -325,7 +325,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 
 <div class="app-container">
   <h1 class="title">Kawaii DJ<br>Monster</h1>
-  
+
   <div class="player-wrapper">
     <div class="tooth left"></div>
     <div class="tooth right"></div>
@@ -344,9 +344,12 @@ input[type="range"]::-webkit-slider-thumb:active {
       <div class="time-display" id="time-display">0:00 / 0:00</div>
     </div>
 
-    <div class="play-controls">
+    <div class="play-controls" style="margin-bottom: 15px;">
       <button class="btn" id="play-btn">▶ PLAY</button>
       <button class="btn" id="pause-btn" style="background: linear-gradient(135deg, #a18cd1, #fbc2eb); box-shadow: 0 6px 0 #8a2be2;">⏸ PAUSE</button>
+    </div>
+    <div class="play-controls">
+      <button class="btn" id="restart-btn" style="background: linear-gradient(135deg, var(--neon-yellow), #ffb347); box-shadow: 0 6px 0 #cc8400; color: #553300; text-shadow: none;">⏮ 最初から (RESTART)</button>
     </div>
 
     <div class="control-label">🌀 PITCH & SPEED</div>
@@ -376,7 +379,7 @@ input[type="range"]::-webkit-slider-thumb:active {
       <span class="vol-icon">🔊</span>
     </div>
   </div>
-  
+
   <audio id="audio-player"></audio>
 </div>
 
@@ -419,21 +422,18 @@ document.getElementById('audio-upload').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
   fileLoaded = true;
-  
+
   const url = URL.createObjectURL(file);
   audio.src = url;
   audio.load();
-  
+
   trackName.innerText = file.name + " 🎵";
-  
+
   // 文字数が長い場合のみアニメーション（Kawaii演出）
   if (!isMarqueeAnimated && file.name.length > 15) {
     trackName.style.animation = 'marquee 8s linear infinite';
     isMarqueeAnimated = true;
   }
-  
-  // 読み込み完了後自動再生を試みる
-  audio.play().catch(err => console.log("Autoplay blocked"));
 });
 
 function showMessage(msg) {
@@ -452,6 +452,15 @@ document.getElementById('play-btn').addEventListener('click', () => {
 
 document.getElementById('pause-btn').addEventListener('click', () => {
   audio.pause();
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  if (fileLoaded) {
+    audio.currentTime = 0;
+    audio.play();
+  } else {
+    showMessage("👻 ファイルをロードしてね！ 👻");
+  }
 });
 
 audio.addEventListener('play', () => {
@@ -497,18 +506,18 @@ function getKnobAngle(e) {
   const rect = knobContainer.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
-  
+
   let clientX = e.clientX;
   let clientY = e.clientY;
-  
+
   if (e.touches && e.touches.length > 0) {
     clientX = e.touches[0].clientX;
     clientY = e.touches[0].clientY;
   }
-  
+
   const dx = clientX - cx;
   const dy = clientY - cy;
-  
+
   // atan2(dx, -dy) によって上が0度、右が90度の時計回りになる
   let angle = Math.atan2(dx, -dy) * 180 / Math.PI;
   return angle;
@@ -519,13 +528,13 @@ function updateKnob(angle) {
   // 可動範囲を -135度 〜 135度 にクランプ
   if (angle > 135 && angle <= 180) angle = 135;
   if (angle < -135 && angle >= -180) angle = -135;
-  
+
   // 0.0 〜 1.0 の進捗率に変換
   let progress = (angle + 135) / 270;
-  
+
   // 速度計算 (0.8 〜 1.2)
   let speed = 0.8 + (progress * 0.4);
-  
+
   // DJ機材のような「1.0」へのスナップ機構（自然で滑らかな操作感）
   if (speed > 0.985 && speed < 1.015) {
     speed = 1.0;
@@ -537,7 +546,7 @@ function updateKnob(angle) {
   if (fileLoaded) {
     audio.playbackRate = speed;
   }
-  
+
   // UIの更新
   knobDial.style.transform = `rotate(${angle}deg)`;
   activeTrack.style.strokeDashoffset = MAX_PATH_LENGTH * (1 - progress);
