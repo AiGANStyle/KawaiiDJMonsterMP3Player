@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kawaii Monster MP3 Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=M+PLUS+Rounded+1c:wght@700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --neon-pink: #FF1493;
+  --neon-cyan: #00FFFF;
+  --neon-lime: #32CD32;
+  --neon-yellow: #FFFF00;
+  --bg-color: #1a0b2e;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none; /* スマホでの誤選択防止 */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(255, 20, 147, 0.2), transparent 30%),
+    radial-gradient(circle at 85% 30%, rgba(0, 255, 255, 0.2), transparent 30%);
+  font-family: 'M PLUS Rounded 1c', 'Fredoka One', sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  touch-action: pan-y; /* 縦スクロールは許可、ドラッグ要素は個別制御 */
+}
+
+.sparkles-container {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.sparkle-star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  opacity: 0;
+  animation: twinkle 3s infinite ease-in-out;
+}
+.sparkle-star:nth-child(even) {
+  /* 星型のクリップパスでKawaii感アップ */
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  border-radius: 0;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50% { opacity: 0.8; transform: scale(1.5) rotate(180deg); }
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  z-index: 1;
+}
+
+.title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2.2rem;
+  margin: 0 0 15px 0;
+  color: #fff;
+  text-shadow: 
+    0 0 5px #fff,
+    0 0 10px #fff,
+    0 0 20px var(--neon-pink),
+    0 0 40px var(--neon-pink);
+  animation: pulsate 1.5s infinite alternate;
+  text-align: center;
+}
+@keyframes pulsate {
+  100% {
+    text-shadow: 
+      0 0 2px #fff,
+      0 0 5px #fff,
+      0 0 10px var(--neon-cyan),
+      0 0 20px var(--neon-cyan);
+  }
+}
+
+.player-wrapper {
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+  backdrop-filter: blur(12px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 40px;
+  padding: 25px 20px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 
+    0 0 25px rgba(255, 20, 147, 0.4),
+    inset 0 0 15px rgba(0, 255, 255, 0.2);
+  position: relative;
+}
+/* モンスターのキバ装飾 */
+.tooth {
+  position: absolute;
+  top: 0;
+  width: 25px;
+  height: 25px;
+  background: white;
+  border-radius: 0 0 12px 12px;
+  box-shadow: inset -2px -2px 5px rgba(0,0,0,0.2), 0 0 8px white;
+}
+.tooth.left { left: 25%; }
+.tooth.right { right: 25%; }
+
+.btn {
+  background: linear-gradient(135deg, var(--neon-pink), #ff66b2);
+  border: none;
+  border-radius: 25px;
+  padding: 14px 20px;
+  color: white;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 
+    0 6px 0 #b3005f,
+    0 10px 15px rgba(255, 20, 147, 0.4);
+  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* ぷにぷにバウンス */
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.btn:active {
+  transform: translateY(6px) scale(0.95);
+  box-shadow: 
+    0 0px 0 #b3005f,
+    0 4px 5px rgba(255, 20, 147, 0.4);
+}
+.btn.cyan {
+  background: linear-gradient(135deg, var(--neon-cyan), #66ffff);
+  box-shadow: 0 6px 0 #009999, 0 10px 15px rgba(0, 255, 255, 0.4);
+  color: #003333;
+  text-shadow: none;
+}
+.btn.cyan:active {
+  box-shadow: 0 0px 0 #009999, 0 4px 5px rgba(0, 255, 255, 0.4);
+}
+
+.file-load-section { margin-bottom: 20px; }
+.play-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.track-screen {
+  background: rgba(0, 0, 0, 0.5);
+  border: 3px solid var(--neon-cyan);
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.3), 0 0 10px var(--neon-cyan);
+  text-align: center;
+  overflow: hidden;
+  transition: box-shadow 0.3s;
+}
+.track-screen.playing {
+  animation: screen-pulse 0.5s infinite alternate;
+}
+@keyframes screen-pulse {
+  from { box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.3), 0 0 10px var(--neon-cyan); }
+  to { box-shadow: inset 0 0 30px rgba(0, 255, 255, 0.6), 0 0 20px var(--neon-cyan); }
+}
+
+.marquee-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+.track-name-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  font-family: 'Fredoka One', cursive;
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px var(--neon-pink);
+  font-size: 1.2rem;
+}
+.time-display {
+  font-family: monospace;
+  font-size: 1.1rem;
+  color: #fff;
+  margin-top: 8px;
+  text-shadow: 0 0 5px #fff;
+}
+
+.control-label {
+  text-align: center;
+  font-family: 'Fredoka One', cursive;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 5px var(--neon-yellow);
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+
+.knob-container {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 20px auto;
+  border-radius: 50%;
+  touch-action: none; /* ドラック時のスクロール防止（スマホ対応） */
+}
+
+.svg-ring {
+  width: 100%;
+  height: 100%;
+  /* ドロップシャドウでネオン管を表現 */
+  filter: drop-shadow(0 0 5px var(--neon-cyan)) drop-shadow(0 0 10px var(--neon-pink));
+}
+
+.knob-dial {
+  position: absolute;
+  top: 30px; /* (160 - 100) / 2 */
+  left: 30px;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle at 30% 30%, #555, #111);
+  border-radius: 50%;
+  box-shadow: 
+    inset 0 2px 5px rgba(255,255,255,0.4),
+    0 10px 15px rgba(0,0,0,0.6),
+    0 0 0 3px #ff1493,
+    0 0 15px #ff1493;
+  transform: rotate(0deg); /* JSで制御 */
+  z-index: 10;
+  cursor: grab;
+}
+.knob-dial:active { cursor: grabbing; }
+
+.knob-dot {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+}
+
+.speed-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.4rem;
+  color: white;
+  text-shadow: 0 0 10px rgba(0,0,0,1);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(0,0,0,0.3);
+  padding: 15px 20px;
+  border-radius: 30px;
+  border: 2px solid var(--neon-pink);
+  box-shadow: inset 0 0 15px rgba(255, 20, 147, 0.3);
+}
+.vol-icon { font-size: 1.5rem; }
+
+/* スマホでタッチしやすい太めのスライダー */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 22px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 11px;
+  outline: none;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+  touch-action: none;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 22px;
+  border-radius: 11px;
+  -webkit-appearance: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 38px;
+  width: 38px;
+  border-radius: 50%;
+  background: var(--neon-lime);
+  margin-top: -10px; /* トラックとツマミの中心を合わせる */
+  box-shadow: 0 0 15px var(--neon-lime), 0 4px 6px rgba(0,0,0,0.4);
+  border: 3px solid white;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+</style>
+</head>
+<body>
+
+<div class="sparkles-container" id="sparkles-container"></div>
+
+<div class="app-container">
+  <h1 class="title">Kawaii DJ<br>Monster</h1>
+  
+  <div class="player-wrapper">
+    <div class="tooth left"></div>
+    <div class="tooth right"></div>
+
+    <div class="file-load-section">
+      <label for="audio-upload" class="btn cyan upload-btn">
+        <span>💖 LOAD MP3 FILE 💖</span>
+      </label>
+      <input type="file" id="audio-upload" accept="audio/*" style="display:none;">
+    </div>
+
+    <div class="track-screen" id="track-screen">
+      <div class="marquee-container">
+        <span class="track-name-marquee" id="track-name">NO TRACK LOADED ✨</span>
+      </div>
+      <div class="time-display" id="time-display">0:00 / 0:00</div>
+    </div>
+
+    <div class="play-controls">
+      <button class="btn" id="play-btn">▶ PLAY</button>
+      <button class="btn" id="pause-btn" style="background: linear-gradient(135deg, #a18cd1, #fbc2eb); box-shadow: 0 6px 0 #8a2be2;">⏸ PAUSE</button>
+    </div>
+
+    <div class="control-label">🌀 PITCH & SPEED</div>
+    <div class="knob-container" id="speed-knob-container">
+      <svg class="svg-ring" viewBox="0 0 100 100">
+        <!-- 背景トラック -->
+        <path d="M 20 80 A 45 45 0 1 1 80 80" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" stroke-linecap="round"/>
+        <!-- アクティブなネオントラック (長さ212) -->
+        <path id="knob-active-track" d="M 20 80 A 45 45 0 1 1 80 80" fill="none" stroke="url(#neon-grad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="212.06" stroke-dashoffset="106.03"/>
+        <defs>
+          <linearGradient id="neon-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00FFFF" />
+            <stop offset="100%" stop-color="#FF1493" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="knob-dial" id="speed-knob">
+        <div class="knob-dot"></div>
+      </div>
+      <div class="speed-text" id="speed-text">1.00x</div>
+    </div>
+
+    <div class="control-label">🔊 VOLUME</div>
+    <div class="volume-container">
+      <span class="vol-icon">🔉</span>
+      <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.7">
+      <span class="vol-icon">🔊</span>
+    </div>
+  </div>
+  
+  <audio id="audio-player"></audio>
+</div>
+
+<script>
+function createSparkles() {
+  const container = document.getElementById('sparkles-container');
+  const colors = ['#FF1493', '#00FFFF', '#FFFF00', '#32CD32', '#FF69B4'];
+  for (let i = 0; i < 30; i++) {
+    const star = document.createElement('div');
+    star.className = 'sparkle-star';
+    star.style.left = Math.random() * 100 + 'vw';
+    star.style.top = Math.random() * 100 + 'vh';
+    star.style.animationDelay = (Math.random() * 3) + 's';
+    star.style.color = colors[Math.floor(Math.random() * colors.length)];
+    star.style.backgroundColor = star.style.color;
+    const size = Math.random() * 8 + 4;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    container.appendChild(star);
+  }
+}
+createSparkles();
+
+const audio = document.getElementById('audio-player');
+const trackName = document.getElementById('track-name');
+const timeDisplay = document.getElementById('time-display');
+const trackScreen = document.getElementById('track-screen');
+
+let fileLoaded = false;
+let isMarqueeAnimated = false;
+
+function formatTime(seconds) {
+  if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+document.getElementById('audio-upload').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  fileLoaded = true;
+  
+  const url = URL.createObjectURL(file);
+  audio.src = url;
+  audio.load();
+  
+  trackName.innerText = file.name + " 🎵";
+  
+  // 文字数が長い場合のみアニメーション（Kawaii演出）
+  if (!isMarqueeAnimated && file.name.length > 15) {
+    trackName.style.animation = 'marquee 8s linear infinite';
+    isMarqueeAnimated = true;
+  }
+  
+  // 読み込み完了後自動再生を試みる
+  audio.play().catch(err => console.log("Autoplay blocked"));
+});
+
+function showMessage(msg) {
+  const original = trackName.innerText;
+  trackName.innerText = msg;
+  setTimeout(() => { trackName.innerText = original; }, 2000);
+}
+
+document.getElementById('play-btn').addEventListener('click', () => {
+  if (fileLoaded) {
+    audio.play();
+  } else {
+    showMessage("👻 ファイルをロードしてね！ 👻");
+  }
+});
+
+document.getElementById('pause-btn').addEventListener('click', () => {
+  audio.pause();
+});
+
+audio.addEventListener('play', () => {
+  trackScreen.classList.add('playing');
+});
+audio.addEventListener('pause', () => {
+  trackScreen.classList.remove('playing');
+});
+
+audio.addEventListener('timeupdate', () => {
+  const current = formatTime(audio.currentTime);
+  const total = formatTime(audio.duration);
+  timeDisplay.innerText = `${current} / ${total}`;
+});
+audio.addEventListener('loadedmetadata', () => {
+  timeDisplay.innerText = `0:00 / ${formatTime(audio.duration)}`;
+});
+
+const volSlider = document.getElementById('volume-slider');
+function updateVolumeVisual() {
+  const val = volSlider.value;
+  const pct = val * 100;
+  // ツマミまでの軌跡をネオンピンクで塗りつぶす
+  volSlider.style.background = `linear-gradient(to right, var(--neon-pink) ${pct}%, rgba(255,255,255,0.1) ${pct}%)`;
+}
+volSlider.addEventListener('input', (e) => {
+  audio.volume = e.target.value;
+  updateVolumeVisual();
+});
+audio.volume = volSlider.value; // 初期化
+updateVolumeVisual();
+
+const knobContainer = document.getElementById('speed-knob-container');
+const knobDial = document.getElementById('speed-knob');
+const activeTrack = document.getElementById('knob-active-track');
+const speedText = document.getElementById('speed-text');
+
+let isDragging = false;
+const MAX_PATH_LENGTH = 212.06; // SVG円弧の長さ
+
+// マウス・タッチ座標から角度を計算 (上を0度とする)
+function getKnobAngle(e) {
+  const rect = knobContainer.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  
+  let clientX = e.clientX;
+  let clientY = e.clientY;
+  
+  if (e.touches && e.touches.length > 0) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  }
+  
+  const dx = clientX - cx;
+  const dy = clientY - cy;
+  
+  // atan2(dx, -dy) によって上が0度、右が90度の時計回りになる
+  let angle = Math.atan2(dx, -dy) * 180 / Math.PI;
+  return angle;
+}
+
+// 角度に基づいてUIと再生速度を更新
+function updateKnob(angle) {
+  // 可動範囲を -135度 〜 135度 にクランプ
+  if (angle > 135 && angle <= 180) angle = 135;
+  if (angle < -135 && angle >= -180) angle = -135;
+  
+  // 0.0 〜 1.0 の進捗率に変換
+  let progress = (angle + 135) / 270;
+  
+  // 速度計算 (0.8 〜 1.2)
+  let speed = 0.8 + (progress * 0.4);
+  
+  // DJ機材のような「1.0」へのスナップ機構（自然で滑らかな操作感）
+  if (speed > 0.985 && speed < 1.015) {
+    speed = 1.0;
+    progress = 0.5;
+    angle = 0;
+  }
+
+  // リアルタイムに速度変更（音途切れなし）
+  if (fileLoaded) {
+    audio.playbackRate = speed;
+  }
+  
+  // UIの更新
+  knobDial.style.transform = `rotate(${angle}deg)`;
+  activeTrack.style.strokeDashoffset = MAX_PATH_LENGTH * (1 - progress);
+  speedText.innerText = speed.toFixed(2) + 'x';
+}
+
+function handlePointerDown(e) {
+  e.preventDefault();
+  isDragging = true;
+  knobContainer.setPointerCapture(e.pointerId); // 領域外にはみ出ても追従
+  updateKnob(getKnobAngle(e));
+}
+
+function handlePointerMove(e) {
+  if (!isDragging) return;
+  e.preventDefault();
+  updateKnob(getKnobAngle(e));
+}
+
+function handlePointerUp(e) {
+  isDragging = false;
+  knobContainer.releasePointerCapture(e.pointerId);
+}
+
+// pointer eventsはスマホのタッチとPCのマウスを両方サポート
+knobContainer.addEventListener('pointerdown', handlePointerDown);
+knobContainer.addEventListener('pointermove', handlePointerMove);
+knobContainer.addEventListener('pointerup', handlePointerUp);
+knobContainer.addEventListener('pointercancel', handlePointerUp);
+
+// 初期化（1.0x状態）
+updateKnob(0);
+
+/* Kawaii Marquee Animation CSS Injection */
+const style = document.createElement('style');
+style.innerHTML = `
+  @keyframes marquee {
+    from { transform: translateX(100%); }
+    to { transform: translateX(-150%); }
+  }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
